@@ -4,11 +4,18 @@ from scipy import linalg
 from pyscf import mcscf, fci, ao2mo
 from pyscf.dft import gen_grid
 from pyscf.lib import logger
-from mrh.util.rdm import get_2CDM_from_2RDM, get_2CDMs_from_2RDMs
-from mrh.my_pyscf.mcpdft.mcpdft import _PDFT
-from mrh.my_pyscf.mcpdft.otfnal import energy_ot as get_E_ot
-from mrh.my_pyscf.mcpdft.otfnal import get_transfnal
-from mrh.my_pyscf.mcpdft.otpd import get_ontop_pair_density
+#from mrh.util.rdm import get_2CDM_from_2RDM, get_2CDMs_from_2RDMs
+#from mrh.my_pyscf.mcpdft.mcpdft import _PDFT
+import os
+pdft_backend = os.environ.get('PDFT_BACKEND', 'pyscf')
+if pdft_backend == 'mrh':
+    from mrh.my_pyscf.mcpdft.otfnal import energy_ot as get_E_ot
+    from mrh.my_pyscf.mcpdft.otfnal import get_transfnal
+    from mrh.my_pyscf.mcpdft.otpd import get_ontop_pair_density
+else:
+    from pyscf.mcpdft.otfnal import energy_ot as get_E_ot
+    from pyscf.mcpdft.otfnal import get_transfnal
+    from pyscf.mcpdft.otfnal import get_ontop_pair_density
 
 from functools import partial
 print = partial(print, flush=True)
@@ -176,7 +183,7 @@ class PDFT():
         #        self.otfnal.grids, key, None))
 
     def _init_ot (self, my_ot):
-        if isinstance (my_ot, (str, np.string_)):
+        if isinstance (my_ot, str):
             self.otfnal = get_transfnal (self.mol, my_ot)
         else:
             self.otfnal = my_ot

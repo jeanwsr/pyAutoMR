@@ -127,17 +127,22 @@ def mix(xyz, bas, charge=0, *args, **kwargs
 #                     skipstb=skipstb, xc=xc, newton=newton, mix_param=mix_param, hl=hl, field=field
 *args, **kwargs)
 
-def _mix(mol, 
+def _mix(mol_or_mf, 
         conv='loose', cycle=5, level_shift=0.0, 
         skipstb=False, xc=None, newton=False, mix_param=np.pi/4, hl=[[0,0]], field=(0.0, 0.0, 0.0),
         verbose=4
 ):
     t1 = time.time()
-    if xc is None: 
-        mf = scf.RHF(mol)
+    if isinstance(mol_or_mf, gto.Mole):
+        mol = mol_or_mf
+        if xc is None: 
+            mf = scf.RHF(mol)
+        else:
+            mf = dft.RKS(mol)
+            mf.xc = xc
     else:
-        mf = dft.RKS(mol)
-        mf.xc = xc
+        mf = mol_or_mf
+        mol = mf.mol
     mf.conv_tol = 1e-5
     if field[0] != 0.0 or field[1] != 0.0 or field[2] != 0.0:
         mf = apply_field(mf, field)
@@ -159,11 +164,12 @@ def _mix(mol,
         print('After mixing')
         dump_mat.dump_mo(mol, mo_mix[0][:,max(0,nocc-4):nocc+4], ncol=8)
         dump_mat.dump_mo(mol, mo_mix[1][:,max(0,nocc-4):nocc+4], ncol=8)
-    if xc is None:
-        mf_mix = scf.UHF(mol)
-    else:
-        mf_mix = dft.UKS(mol)
-        mf_mix.xc = xc
+    # if xc is None:
+    #     mf_mix = scf.UHF(mol)
+    # else:
+    #     mf_mix = dft.UKS(mol)
+    #     mf_mix.xc = xc
+    mf_mix = mf.copy().to_uhf()
     if cycle == 0:
         mf_mix.mo_coeff = mo_mix
         nelec = mf_mix.nelec
@@ -239,14 +245,16 @@ def check_stab(mf_mix, newton=False, goal='uhf', debug=False):
     if newton:
         mf_mix=mf_mix.newton()
     cyc = 0
+    tmp_verbose = 9 if debug else 5
     while(not stable and cyc < 10):
         print('Stability Opt Attempt %d' %cyc)
-        if debug: mf_mix.verbose = 4
+        #if debug: mf_mix.verbose = 4
         mf_mix.mo_coeff = mo
         dm_new = mf_mix.make_rdm1(mo, mf_mix.mo_occ)
         mf_mix.kernel(dm0=dm_new)
-        if debug: mf_mix.verbose = 9
-        mo, stable = stab(mf_mix, return_status=True)
+        #if debug: mf_mix.verbose = 9
+        with lib.temporary_env(mf_mix, verbose=tmp_verbose):
+            mo, stable = stab(mf_mix, return_status=True)
         cyc += 1
     if not stable:
         raise RuntimeError('Stability Opt failed after %d attempts.' % cyc)
