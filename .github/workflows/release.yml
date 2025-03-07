@@ -21,7 +21,7 @@ jobs:
         run: echo "VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
 
       - name: Install tools
-        run: pip install build twine<6.1
+        run: pip install build "twine<6.1"
 
       - name: Build
         run: |
