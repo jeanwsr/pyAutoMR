@@ -169,7 +169,10 @@ def _mix(mol_or_mf,
     # else:
     #     mf_mix = dft.UKS(mol)
     #     mf_mix.xc = xc
-    mf_mix = mf.copy().to_uhf()
+    if mf.istype('KohnShamDFT'):
+        mf_mix = mf.copy().to_uks()
+    else:
+        mf_mix = mf.copy().to_uhf()
     if cycle == 0:
         mf_mix.mo_coeff = mo_mix
         nelec = mf_mix.nelec
@@ -186,10 +189,10 @@ def _mix(mol_or_mf,
         mf_mix.level_shift = level_shift
         mf_mix.max_cycle = 100
     mf_mix.kernel(dm0=dm_mix)
+    t2 = time.time()
+    print('time for guess (SCF): %.3f' % (t2-t1))
     mf_mix = postscf_check(mf_mix, conv, skipstb, newton)
 
-    t2 = time.time()
-    print('time for guess: %.3f' % (t2-t1))
     return mf_mix
 
 def postscf_check(mf, conv, skipstb, newton):
@@ -220,6 +223,7 @@ def check_uhf2(mf):
     return is_uhf, mf
 
 def check_stab(mf_mix, newton=False, goal='uhf', debug=False):
+    t1 = time.time()
     if goal=='rhf':
         stab = stability.rhf_internal
         if mf_mix.mol.spin != 0:
@@ -240,12 +244,13 @@ def check_stab(mf_mix, newton=False, goal='uhf', debug=False):
             mf_mix.kernel(dm0=dm_c)
         stab = stability.ghf_stability
 
-    if debug: mf_mix.verbose = 9
-    mo, stable = stab(mf_mix, return_status=True)
+    tmp_verbose = 9 if debug else 5
+    #if debug: mf_mix.verbose = 9
+    with lib.temporary_env(mf_mix, verbose=tmp_verbose):
+        mo, stable = stab(mf_mix, return_status=True)
     if newton:
         mf_mix=mf_mix.newton()
     cyc = 0
-    tmp_verbose = 9 if debug else 5
     while(not stable and cyc < 10):
         print('Stability Opt Attempt %d' %cyc)
         #if debug: mf_mix.verbose = 4
@@ -261,6 +266,8 @@ def check_stab(mf_mix, newton=False, goal='uhf', debug=False):
     if not mf_mix.converged:
         print('Warning: SCF finally not converged')
     mf_mix.mo_coeff = mo
+    t2 = time.time()
+    print('time for stab check: %.3f' % (t2-t1))
     return mf_mix
 
 def from_frag_tight(xyz, bas, frags, chgs, spins, newton=False, **kwargs):
