@@ -198,9 +198,10 @@ def _mix(mol_or_mf,
 def postscf_check(mf, conv, skipstb, newton):
     if not mf.converged and conv == 'tight':
         raise RuntimeError('UHF not converged')
-    ss, s = mf.spin_square()
-    if s < 0.1:
-        print('Warning: S too small, symmetry breaking may be failed')
+    s2, ssp1 = mf.spin_square()
+    #print(f'ss {s2}, s {ssp1}')
+    if s2 < 0.1:
+        print('Warning: <S^2> too small, symmetry breaking may be failed')
     
     if conv == 'tight' and not skipstb:
         mf = check_stab(mf, newton)

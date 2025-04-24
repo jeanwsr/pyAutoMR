@@ -13,6 +13,7 @@ if pdft_backend == 'mrh':
     from mrh.my_pyscf.mcpdft.otfnal import get_transfnal
     from mrh.my_pyscf.mcpdft.otpd import get_ontop_pair_density
 else:
+    from pyscf.mcpdft import otfnal
     from pyscf.mcpdft.otfnal import energy_ot as get_E_ot
     from pyscf.mcpdft.otfnal import get_transfnal
     from pyscf.mcpdft.otfnal import get_ontop_pair_density
@@ -20,6 +21,78 @@ else:
 from functools import partial
 print = partial(print, flush=True)
 einsum = partial(np.einsum, optimize=True)
+
+otfnal.OT_PRESET |={
+    # Reparametrized-M06L: rep-M06L
+    # MC23 = { '0.2952*HF + (1-0.2952)*rep-M06L, 0.2952*HF + (1-0.2952)*rep-M06L'}}
+    # XC_ID_MGGA_C_M06_L = 233
+    # XC_ID_MGGA_X_M06_L = 203
+    'MC23PURE':{
+        'xc_base':'M06L',
+        'ext_params':{203: np.array([3.352197, 6.332929e-01, -9.469553e-01, 2.030835e-01,
+                                     2.503819, 8.085354e-01, -3.619144, -5.572321e-01,
+                                     -4.506606, 9.614774e-01, 6.977048, -1.309337, -2.426371,
+                                     -7.896540e-03, 1.364510e-02, -1.714252e-06, -4.698672e-05, 0.0]),
+                        233: np.array([0.06, 0.0031, 0.00515088, 0.00304966, 2.427648, 3.707473,
+                                       -7.943377, -2.521466, 2.658691, 2.932276, -8.832841e-01,
+                                       -1.895247, -2.899644, -5.068570e-01, -2.712838, 9.416102e-02,
+                                       -3.485860e-03, -5.811240e-04, 6.668814e-04, 0.0, 2.669169e-01,
+                                       -7.563289e-02, 7.036292e-02, 3.493904e-04, 6.360837e-04, 0.0, 1e-10])}
+        },
+    'M06L29':{
+        'xc_base':'M06L',
+        'ext_params':{},
+        'hyb':(0.2952,0,0),
+        'facs':(0.7048,0.7048)
+        },
+    'BLYPXP2AP2BM4CP4':{
+        'xc_base':'BLYP',
+        'ext_params':{
+            106: np.array([0.0042*1.2, 6.0]),
+            131: np.array([0.04918*1.2, 0.132*0.6, 0.2533*1.4, 0.349])
+            },
+        },
+    'BLYPXP2':{
+        'xc_base':'BLYP',
+        'ext_params':{
+            106: np.array([0.0042*1.2, 6.0]),
+            #131: np.array([0.04918*0.8, 0.132, 0.2533, 0.349])
+            },
+        },
+    'BLYPAM2':{
+        'xc_base':'BLYP',
+        'ext_params':{131: np.array([0.04918*0.8, 0.132, 0.2533, 0.349])},
+        },
+    'BLYPAP2':{
+        'xc_base':'BLYP',
+        'ext_params':{131: np.array([0.04918*1.2, 0.132, 0.2533, 0.349])},
+        },
+    'BLYPBM2':{
+        'xc_base':'BLYP',
+        'ext_params':{131: np.array([0.04918, 0.132*0.8, 0.2533, 0.349])},
+        },
+    'BLYPBM4':{
+        'xc_base':'BLYP',
+        'ext_params':{131: np.array([0.04918, 0.132*0.6, 0.2533, 0.349])},
+        },
+    'BLYPBP2':{
+        'xc_base':'BLYP',
+        'ext_params':{131: np.array([0.04918, 0.132*1.2, 0.2533, 0.349])},
+        },
+    'BLYPCM2':{
+        'xc_base':'BLYP',
+        'ext_params':{131: np.array([0.04918, 0.132, 0.2533*0.8, 0.349])},
+        },
+    'BLYPCP2':{
+        'xc_base':'BLYP',
+        'ext_params':{131: np.array([0.04918, 0.132, 0.2533*1.2, 0.349])},
+        },
+    'BLYPCP4':{
+        'xc_base':'BLYP',
+        'ext_params':{131: np.array([0.04918, 0.132, 0.2533*1.4, 0.349])},
+        },
+    }        
+
 
 # mc is mcscf.CASSCF obj
 def get_energy_decomposition (mc, ot=None, mo_coeff=None):
