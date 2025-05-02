@@ -129,9 +129,14 @@ def mix(xyz, bas, charge=0, *args, **kwargs
 
 def _mix(mol_or_mf, 
         conv='loose', cycle=5, level_shift=0.0, 
-        skipstb=False, xc=None, newton=False, mix_param=np.pi/4, hl=[[0,0]], field=(0.0, 0.0, 0.0),
+        skipstb=False, xc=None, newton=False, mix_param=np.pi/4, hl=None, pair=None,
+        field=(0.0, 0.0, 0.0),
         verbose=4
 ):
+    '''
+    hl: [[0,0]]
+    pair: 1
+    '''
     t1 = time.time()
     if isinstance(mol_or_mf, gto.Mole):
         mol = mol_or_mf
@@ -156,6 +161,12 @@ def _mix(mol_or_mf,
         print('RHF MO energy and HOMO-3~LUMO+3 before mixing')
         print('mo_e', mf.mo_energy[max(0,nocc-4):nocc+4])
         dump_mat.dump_mo(mol, mo_mix[:,max(0,nocc-4):nocc+4], ncol=8)
+    if hl is not None and pair is not None:
+        raise ValueError('hl and pair cannot be specified simultaneously')
+    elif pair is not None:
+        hl = [[0-i,0+i] for i in range(pair)]
+    if hl is None:
+        hl = [[0,0]]
     if not isinstance(hl[0], list):
         hl = [hl]
     for hlitem in hl:
@@ -169,10 +180,7 @@ def _mix(mol_or_mf,
     # else:
     #     mf_mix = dft.UKS(mol)
     #     mf_mix.xc = xc
-    if mf.istype('KohnShamDFT'):
-        mf_mix = mf.copy().to_uks()
-    else:
-        mf_mix = mf.copy().to_uhf()
+    mf_mix = to_u(mf)
     if cycle == 0:
         mf_mix.mo_coeff = mo_mix
         nelec = mf_mix.nelec
@@ -194,6 +202,14 @@ def _mix(mol_or_mf,
     mf_mix = postscf_check(mf_mix, conv, skipstb, newton)
 
     return mf_mix
+
+def to_u(mf):
+    if mf.istype('KohnShamDFT'):
+        mf_mix = mf.copy().to_uks()
+    else:
+        mf_mix = mf.copy().to_uhf()
+    return mf_mix
+
 
 def postscf_check(mf, conv, skipstb, newton):
     if not mf.converged and conv == 'tight':
@@ -305,7 +321,12 @@ def _from_frag(mol_or_mf, frags, chgs, spins,
     
     t1 = time.time() 
     dm, mo, occ = guess_frag(mol_or_mf, frags, chgs, spins, sfx2c=sfx2c, rmdegen=rmdegen, bgchg=bgchg)
-    if isinstance(mol_or_mf, gto.Mole):
+    nomf = True
+    if isinstance(mol_or_mf, scf.hf.SCF):
+        mf = mol_or_mf
+        mol = mf.mol
+        nomf = False
+    elif isinstance(mol_or_mf, gto.Mole):
         mol = mol_or_mf
     else:
         mol1 = mol_or_mf[0].mol
@@ -317,24 +338,26 @@ def _from_frag(mol_or_mf, frags, chgs, spins,
         dump_mat.dump_mo(mol, mo[0])
         print('Frag guess orb beta')
         dump_mat.dump_mo(mol, mo[1])
-    if xc is None:
-        mf = scf.UHF(mol)
-    else:
-        mf = dft.UKS(mol)
-        mf.xc = xc
-    if cycle == 0:
-        mf.mo_coeff = mo
-        mf.mo_occ = occ
-        mf.mo_energy = np.zeros((2, mo[0].shape[1]))
-    mf.verbose = verbose
+
+    if nomf:
+        if xc is None:
+            mf = scf.UHF(mol)
+        else:
+            mf = dft.UKS(mol)
+            mf.xc = xc
+        if cycle == 0:
+            mf.mo_coeff = mo
+            mf.mo_occ = occ
+            mf.mo_energy = np.zeros((2, mo[0].shape[1]))
+        mf.verbose = verbose
+        if sfx2c:
+            mf = mf.sfx2c1e()
     if conv == 'loose':
         mf.conv_tol = tol
         mf.max_cycle = cycle
     elif conv == 'tight':
         mf.level_shift = level_shift
         mf.max_cycle = 100
-    if sfx2c:
-        mf = mf.sfx2c1e()
     mf.kernel(dm0 = dm)
     mf = postscf_check(mf, conv, skipstb, newton)
     t2 = time.time()
@@ -361,10 +384,15 @@ def guess_frag(mol_or_mf, frags, chgs, spins, sfx2c=False, rmdegen=False, bgchg=
              mol2.set(basis = 'def2-svp', verbose = 0).build()
              mf2 = scf.HF(mol2).set(conv_tol = 1e-4).run()
              pop, mul_chg = mf2.mulliken_pop()
-    
-    print('**** generating fragment guess ****')
-    if isinstance(mol_or_mf, gto.Mole):
+    if isinstance(mol_or_mf, scf.hf.SCF):
+        mol = mol_or_mf.mol
+    elif isinstance(mol_or_mf, gto.Mole):
         mol = mol_or_mf
+    else:
+        mol = None
+    print('**** generating fragment guess ****')
+    if mol is not None:
+        #mol = mol_or_mf
         atom = mol.format_atom(mol.atom, unit=1)
         #print(atom)
         fraga, fragb = frags
@@ -493,6 +521,7 @@ def init_guess_mixed(mo_coeff, mo_occ, mix_param=np.pi/4, ho=0, lu=0):
     #mix homo and lumo of alpha and beta coefficients
     q=mix_param
     angle = q / np.pi
+    print(f'mixing HOMO -{ho}, LUMO +{lu}')
     print('rotating angle: %.2f pi' % angle)
 
     Ca[:,homo_idx] = np.cos(q)*psi_homo + np.sin(q)*psi_lumo
@@ -513,13 +542,24 @@ def flipspin(xyz, bas, highspin, flipstyle='lmo', loc='pm', fliporb=[-1], site=N
     return _flipspin(mol, highspin, flipstyle, 
                      loc=loc, fliporb=fliporb, site=site, cycle=cycle)
 
-def _flipspin(mol, highspin, flipstyle='lmo', loc='pm', fliporb=[-1], site=None, cycle=50):
-    mol.spin = highspin
-    mf = scf.UHF(mol.build())
+def _flipspin(mol_or_mf, highspin, flipstyle='lmo', loc='pm', fliporb=[-1], site=None, cycle=50):
+    if isinstance(mol_or_mf, gto.Mole):
+        mol = mol_or_mf
+        mol.spin = highspin
+        mf = scf.UHF(mol.build())
+    else:
+        if isinstance(mol_or_mf, scf.hf.RHF):
+            mf = to_u(mol_or_mf)
+        else:
+            mf = mol_or_mf.copy()
+        mf.mol.spin = highspin
+        mf.mol.build()
     mf.conv_tol = 1e-6
     mf.run()
     
+    print(mf)
     mf, unos, noon, _nacto, _, _ncore, _ = autocas.get_uno(mf, thresh=1.98)
+    print(mf)
     nacto = min(_nacto, highspin)
     ncore = _ncore + nacto - _nacto
     act_idx = slice(ncore, ncore+nacto)
@@ -553,13 +593,14 @@ def _flipspin(mol, highspin, flipstyle='lmo', loc='pm', fliporb=[-1], site=None,
         mf_bs = flip_bysite(mf, act_idx, loc_orb, atm_loc, site)
     else:
         raise ValueError('flipstyle can only be lmo or site')
+    #print(mf_bs)
     dm0 = mf_bs.make_rdm1()
     #print(dm0[0].trace(), dm0[1].trace())
     #print(np.linalg.norm(dm0[0]-dm0[1]))
     #mf_bs.level_shift = 0.3
     mf_bs.max_cycle = cycle
     #print(mf_bs.mo_coeff[0].shape)
-    print(mf_bs.mo_occ)
+    #print(mf_bs.mo_occ)
     mf_bs.kernel(dm0=dm0)
     return mf_bs
 

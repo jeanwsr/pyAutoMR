@@ -94,10 +94,12 @@ def get_uno(mf, st='st2', uks=False, thresh=1.98):
     nactb = (nacto - nopen)//2
     print('nacto, nacta, nactb: %d %d %d' % (nacto, nacta, nactb))
     #print(mf.mo_occ[0], mf.mo_occ[1])
+    print(mf)
     if uks:
         mf = mf.to_rks()
     else:
         mf = mf.to_rhf()
+    print(mf)
     mf.mo_coeff = unos
     #if mf.mo_occ[0] == mf.mo_occ[1]:
     if mf.mo_occ is None:
