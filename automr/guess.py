@@ -557,37 +557,43 @@ def _flipspin(mol_or_mf, highspin, flipstyle='lmo', loc='pm', fliporb=[-1], site
     mf.conv_tol = 1e-6
     mf.run()
     
-    print(mf)
-    mf, unos, noon, _nacto, _, _ncore, _ = autocas.get_uno(mf, thresh=1.98)
-    print(mf)
-    nacto = min(_nacto, highspin)
-    ncore = _ncore + nacto - _nacto
-    act_idx = slice(ncore, ncore+nacto)
-    if loc=='boys':
-        locl = Boys(mf.mol, mf.mo_coeff[:,act_idx])
-    elif loc=='pm':
-        locl = PM(mf.mol, mf.mo_coeff[:,act_idx], mf)
-        #loc.pop_method = 'meta-lowdin'
-    loc_orb = locl.kernel()
-    dump_mat.dump_mo(mf.mol, loc_orb, ncol=10)
-    loc_orb = sort_by_moe(mf, loc_orb)
-    dump_mat.dump_mo(mf.mol, loc_orb, ncol=10)
-    """pm.pop_method = 'mulliken'
-    loc_orb = pm.kernel()
-    dump_mat.dump_mo(mf.mol, loc_orb, ncol=10)
-    pm.pop_method = 'iao'
-    loc_orb = pm.kernel()
-    dump_mat.dump_mo(mf.mol, loc_orb, ncol=10)
-    pm.pop_method = 'becke'
-    loc_orb = pm.kernel()
-    dump_mat.dump_mo(mf.mol, loc_orb, ncol=10)
-    #mf.mo_coeff[:, act_idx] = loc_orb.copy()
-    #print(mf.mo_occ)    
-    exit() """           
-    
-    atm_loc = mulliken(mf.mol, loc_orb)
-    print('atm_loc', atm_loc)
-    if flipstyle=='lmo':
+    if flipstyle == 'site' or flipstyle == 'lmo':
+        uselmo = True
+    else:
+        uselmo = False
+    if uselmo:
+        print(mf)
+        mf, unos, noon, _nacto, _, _ncore, _ = autocas.get_uno(mf, thresh=1.98)
+        print(mf)
+        nacto = min(_nacto, highspin)
+        ncore = _ncore + nacto - _nacto
+        act_idx = slice(ncore, ncore+nacto)
+        if loc=='boys':
+            locl = Boys(mf.mol, mf.mo_coeff[:,act_idx])
+        elif loc=='pm':
+            locl = PM(mf.mol, mf.mo_coeff[:,act_idx], mf)
+            #loc.pop_method = 'meta-lowdin'
+        loc_orb = locl.kernel()
+        dump_mat.dump_mo(mf.mol, loc_orb, ncol=10)
+        loc_orb = sort_by_moe(mf, loc_orb)
+        dump_mat.dump_mo(mf.mol, loc_orb, ncol=10)
+        """pm.pop_method = 'mulliken'
+        loc_orb = pm.kernel()
+        dump_mat.dump_mo(mf.mol, loc_orb, ncol=10)
+        pm.pop_method = 'iao'
+        loc_orb = pm.kernel()
+        dump_mat.dump_mo(mf.mol, loc_orb, ncol=10)
+        pm.pop_method = 'becke'
+        loc_orb = pm.kernel()
+        dump_mat.dump_mo(mf.mol, loc_orb, ncol=10)
+        #mf.mo_coeff[:, act_idx] = loc_orb.copy()
+        #print(mf.mo_occ)    
+        exit() """               
+        atm_loc = mulliken(mf.mol, loc_orb)
+        print('atm_loc', atm_loc)
+    if flipstyle == 'cmo':
+        mf_bs = flip_bycmo(mf, fliporb)
+    elif flipstyle=='lmo':
         mf_bs = flip_bylmo(mf, act_idx, loc_orb, fliporb)
     elif flipstyle=='site':
         mf_bs = flip_bysite(mf, act_idx, loc_orb, atm_loc, site)
@@ -631,6 +637,36 @@ def mulliken(mol, mo):
                 print('  %d%2s  %.2f  ' % (s, mol.atom_symbol(s), chg[s]), end='')
         print('')
     return atm_loc
+
+def flip_bycmo(mf, fliporb):
+    na, nb = mf.nelec
+    nopen = na - nb
+    mo = mf.mo_coeff
+    mo_core = mo[:, :, :nb]
+    ncore = nb
+    somo = mo[0][:,nb:na]
+    mo_ext = mo[:,:,na:]
+    a = []
+    b = []
+    for i in range(somo.shape[1]):
+        if i in fliporb:
+            b.append(i)
+        else:
+            a.append(i)
+    mo_a = np.hstack((somo[:,a], somo[:,b]))
+    mo_b = np.hstack((somo[:,b], somo[:,a]))
+    mf_bs = mf.copy()
+    nelec = ncore + len(a), ncore + len(b)
+    mf_bs.mol.spin = nelec[0] - nelec[1]
+    mf_bs.mol.build()
+    mf_bs.mo_occ = np.zeros_like(mf_bs.mo_energy)
+    mf_bs.mo_occ[0,:nelec[0]] = 1
+    mf_bs.mo_occ[1,:nelec[1]] = 1
+    mf_bs.mo_coeff = ( np.hstack((mo_core[0], mo_a, mo_ext[0])),
+                       np.hstack((mo_core[1], mo_b, mo_ext[1])))
+    return mf_bs
+
+
 
 def sort_by_moe(mf, loc_orb):
     fock_ao = mf.get_fock()
