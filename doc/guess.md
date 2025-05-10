@@ -34,6 +34,8 @@ mf = guess.from_frag(xyz, bas, [[0],[1]], [0,0], [3,-3])
 ```
 This function also supports `guess._from_frag(mf_or_mol, frags, chgs, spins)`.
 
+Again, by default `conv='loose'` is used.
+
 # Flip spin
 Do a high spin SCF first, localize SOMOs, then flip to low spin. There's two flip style:
 
@@ -43,4 +45,9 @@ Do a high spin SCF first, localize SOMOs, then flip to low spin. There's two fli
 mf = guess._flipspin(mol, highspin=2, flipstyle='site', site=[0])
 ```
 TODO: set target low spin.
+
 2. Flip by LMO
+```
+# start from a triplet. flip the second localized SOMO.
+mf = guess._flipspin(mol, highspin=2, flipstyle='lmo', fliporb=[1])
+```
