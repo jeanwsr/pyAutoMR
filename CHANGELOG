@@ -1,7 +1,30 @@
+version 0.3.0 (WIP, 2025)
+--------------------------
+Features and Improvements
+* update timer, verbose
+* improve doc
+* add ot preset
+* better support for mf_or_mol in from_frag, flipspin
+* add to_u
+* add argument pair for mix
+* add cmo for flipspin
+Fixes
+* fix bug for uks mix
+* fix ss check
 
-version 0.3.0-rc9 (Nov 16, 2022)
+version 0.3.0-rc15 (Mar 7, 2025)
+--------------------------
+* add verbose for mix
+* allow noiter in gen
+* improve flipspin
+* add mf_or_mol for _mix
+* mcpdft backend update
+
+version 0.3.0-rc12 (Jan 29, 2023)
 --------------------------
 * GitHub Actions for auto-release and pypi upload
+* improve mix and from_frag
+* Various fixes
 
 version 0.3.0-rc1 (Nov 16, 2022)
 --------------------------
