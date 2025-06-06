@@ -1,5 +1,6 @@
 import numpy as np
 from pyscf import gto
+import tomli
 
 def check_uno(noon, thresh=1.98):
     ndb = np.count_nonzero(noon > thresh)
@@ -28,3 +29,29 @@ def chemcore(mol):
 def bse_bas(bas, elem):
     import basis_set_exchange
     return gto.load(basis_set_exchange.api.get_basis(bas, elements=elem, fmt='nwchem'), elem)
+
+def get_basis(bas, elem=None):
+    if bas[:4]=='x2c-':
+        return bse_bas(bas, elem)
+    elif bas[:3]=='jun':
+        pass
+    else:
+        return bas
+
+def get_xc2(templ, omega=0.4, srdft=0.5):
+    if templ == 'rsblyp':
+        xc2 = f'RSH({omega},1.0,-{srdft})+{srdft}*ITYH , VWN5*0.19+ LYP*0.81'
+    else:
+        raise ValueError(f"Unsupported template: {templ}")
+    return xc2
+
+def toml_load(toml, domain):
+    with open(toml, 'rb') as f:
+        e = tomli.load(f)
+        if domain in e:
+            return e[domain]
+        else:
+            return None
+        
+def get_config(toml):
+    return toml_load(toml, 'config')
