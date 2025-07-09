@@ -39,19 +39,43 @@ def get_basis(bas, elem=None):
         return bas
 
 def get_xc2(templ, omega=0.4, srdft=0.5):
-    if templ == 'rsblyp':
+    if templ == 'suhf':
+        xc2 = 'suhf'
+    elif templ == 'rsblyp':
         xc2 = f'RSH({omega},1.0,-{srdft})+{srdft}*ITYH , VWN5*0.19+ LYP*0.81'
+    elif templ == 'rsblyp1':
+        xc2 = f'RSH({omega},1.0,-{srdft})+{srdft}*ITYH , VWN5*0.1425+ LYP*0.6075'
     else:
         raise ValueError(f"Unsupported template: {templ}")
     return xc2
 
-def toml_load(toml, domain):
+def toml_load(toml, domain=None):
     with open(toml, 'rb') as f:
         e = tomli.load(f)
+        if domain is None:
+            return e
         if domain in e:
             return e[domain]
         else:
             return None
         
-def get_config(toml):
-    return toml_load(toml, 'config')
+#def get_config(toml, domain='config'):
+#    return toml_load(toml, domain)
+get_config = toml_load
+
+def _get_config_value(toml, domain, default, name):
+    config = toml[domain]
+    if config is None:
+        raise ValueError(f"Domain '{domain}' not found in {toml}")
+    name = name.lower()
+    if name in config:
+        value = config[name]
+    else:
+        value = default
+    return value
+
+def get_spin(toml, name):
+    return _get_config_value(toml, 'spin', 0, name)
+
+def get_charge(toml, name):
+    return _get_config_value(toml, 'charge', 0, name)

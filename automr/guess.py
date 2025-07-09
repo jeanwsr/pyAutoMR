@@ -1,4 +1,5 @@
 from pyscf import gto, scf, dft, lib, qmmm
+from pyscf.scf import addons
 from pyscf.scf import stability
 from pyscf.lib import logger
 from pyscf.lo import PM, Boys
@@ -106,6 +107,20 @@ def _from_fchk(mol, fch, xc=None, no=False):
     # read done
     
     return mf
+
+def from_fchk_proj(mf, fch):
+    fch_mol = gaussian.load_mol_from_fch(fch)
+    fch_mo = gaussian.mo_fch2py(fch)
+    mo = addons.project_mo_nr2nr(fch_mol, fch_mo, mf.mol)
+    #print(mo[0].shape)
+    mf = mf.set(max_cycle=1).run()
+    mf.mo_coeff = np.array(mo)[:,:,:mf.mol.nao]
+    print(mf.mo_coeff.shape)
+    dm0 = mf.make_rdm1()
+    mf.max_cycle = 70
+    mf.kernel(dm0=dm0)
+    return mf
+
 
 def mix_tight(xyz, bas, charge=0, *args, **kwargs):
     return mix(xyz, bas, charge=charge, conv='tight', **kwargs)
