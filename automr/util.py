@@ -70,8 +70,12 @@ def _get_config_value(toml, domain, default, name):
     name = name.lower()
     if name in config:
         value = config[name]
-    else:
+    elif default is not None:
         value = default
+    elif 'default' in config:
+        value = config['default']
+    else:
+        raise ValueError(f"Name '{name}' not found in domain '{domain}' of {toml}")
     return value
 
 def get_spin(toml, name):
@@ -79,3 +83,11 @@ def get_spin(toml, name):
 
 def get_charge(toml, name):
     return _get_config_value(toml, 'charge', 0, name)
+
+def get_config_basis(toml, name):
+    return _get_config_value(toml, 'basis', None, name)
+
+def need_x2c(bas):
+    if 'x2c' in bas:
+        return True
+    return False
