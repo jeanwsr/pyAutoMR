@@ -1,4 +1,6 @@
 from pyphf import *
+from mokit.lib import fchk as fchk_mo
+from mokit.lib import fchk_uno
 
 def run_surs(mf, xc2, conv=None, df='off', chk=None):
     mf2 = SUHF(mf)
@@ -23,10 +25,13 @@ def run_surs(mf, xc2, conv=None, df='off', chk=None):
         mf2.diis_start_cyc = 0
         mf2.diis_space = 15
         mf2.max_cycle = 100
-    elif conv=='plain':
+    elif 'plain' in conv:
         mf2.diis_start_cyc = 5
         mf2.diis_driver = 'plain'
         mf2.max_cycle = 100
+        if 'hard' in conv:
+            mf2.max_cycle = 140
+            mf2.conv_tol = 5e-6
     elif conv=='damp':
         mf2.diis_start_cyc = 5
         mf2.diis_driver = 'rev1'
@@ -46,7 +51,8 @@ def run_surs(mf, xc2, conv=None, df='off', chk=None):
         #mf2.verbose=6
     #mf2.verbose=6
     #mf2.max_cycle = 5
-    #mf2.level_shift = 0.2
+    if 'lev' in conv:
+        mf2.level_shift = 0.2
     if chk is not None:
         mf2.dumpchk = True
         mf2.output = get_chkname(chk)
@@ -72,6 +78,12 @@ def fchk(mf2, name, templ, suffix=None):
         fch = fch.replace('.fch', f'.{suffix}.fch')
     mf2.fchk(fch)
 
+def fchk_uhf(mf, name, suffix, no=None, noon=None):
+    fchname1 = f'{name}_{suffix}'
+    fchk_mo(mf, fchname1+'_uhf.fch')
+    if no is not None:
+        fchk_uno(mf, fchname1+'_uno.fch', no, noon)
+
 def run_pdft(mf2):
     for xc in ['tpbe','tblyp']:
         mf3 = supdft.PDFT(mf2, xc[1:], 'dd')
@@ -83,7 +95,7 @@ def run_pdft(mf2):
         mf4.no_thresh = 1e-4
         mf4.grids_level = 3
         mf4.kernel()
-    for xc in ['tm06l','mc23']:
+    for xc in ['ftblyp','tm06l','mc23']:
         mf4 = supdft.PDFT(mf2, xc, 'pd')
         #mf4.do_split = True
         #mf4.dump_adm = name+'.h5'

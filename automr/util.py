@@ -1,6 +1,6 @@
 import numpy as np
 from pyscf import gto
-import tomli
+import tomli, os
 
 def check_uno(noon, thresh=1.98):
     ndb = np.count_nonzero(noon > thresh)
@@ -49,8 +49,18 @@ def get_xc2(templ, omega=0.4, srdft=0.5):
         raise ValueError(f"Unsupported template: {templ}")
     return xc2
 
+file1 = ['./config.toml', '../config.toml']
 def toml_load(toml, domain=None):
-    with open(toml, 'rb') as f:
+    if toml=='def':
+        if os.path.exists(file1[0]):
+            tomlfile = file1[0]
+        elif os.path.exists(file1[1]):
+            tomlfile = file1[1]
+        else:
+            raise ValueError('default config file not found')
+    else:
+        tomlfile = toml
+    with open(tomlfile, 'rb') as f:
         e = tomli.load(f)
         if domain is None:
             return e
