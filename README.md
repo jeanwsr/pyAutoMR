@@ -14,15 +14,15 @@ This program aims to do:
 
 ## Installation
 Pre-requisites
-* MOKIT (no need to fully compile, only `autopair` is needed)
 * [PySCF](https://github.com/pyscf/pyscf)
-* [mrh](https://github.com/MatthewRHermes/mrh) (optional, for MC-PDFT)
+* MOKIT (optional, no need to fully compile, only `autopair` is needed)
 * [ExSCF](https://github.com/hebrewsnabla/ExSCF) (optional, for SUHF)
 * [pyNOF](https://github.com/hebrewsnabla/pyNOF) (optional, for GVB)
 
 
 Install
-* git clone and add `/path/to/pyAutoMR` to your `PYTHONPATH`
+* `pip install pyAutoMR`
+* Or, git clone and add `/path/to/pyAutoMR` to your `PYTHONPATH`
 
 ## Features
 * UHF -> UNO (-> PM LMO -> assoc rot) (-> GVB) -> CASSCF
@@ -57,12 +57,14 @@ mf = guess.check_stab(mf)
 mf2 = autocas.cas(mf)
 ```
 
+<!--
 ## Tutorials
 * [Tutorial: Symmetry-broken wavefunction](https://blog.shi-rong.wang/pyautomr_1.html)
 * [Auto CASSCF: UHF case](https://blog.shi-rong.wang/mr_practice/mr_tutor.html#uhf-case)
 
 ## TODO
 * TDDFT NO -> CASSCF
+-->
 
 ## Citation
 Please cite pyAutoMR as
