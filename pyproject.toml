@@ -3,13 +3,13 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 [project]
 name = "pyAutoMR"
-version = "0.3.0-rc15"
+version = "0.3.0"
 authors = [
   { name="Shirong Wang", email="srwang20@fudan.edu.cn" },
 ]
 description = "Automatic MR based on PySCF"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: Apache Software License",
