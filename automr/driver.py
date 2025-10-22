@@ -88,17 +88,19 @@ def run_pdft(mf2):
     for xc in ['tpbe','tblyp']:
         mf3 = supdft.PDFT(mf2, xc[1:], 'dd')
         mf3.kernel()
-    for xc in ['tpbe','tblyp']:
-        mf4 = supdft.PDFT(mf2, xc, 'pd')
-        mf4.do_split = True
-        #mf4.dump_adm = name+'.h5'
-        mf4.no_thresh = 1e-4
-        mf4.grids_level = 3
-        mf4.kernel()
+    mf4 = supdft.PDFT(mf2, 'tblyp', 'pd')
+    mf4.do_split = True
+    #mf4.dump_adm = name+'.h5'
+    mf4.no_thresh = 1e-4
+    mf4.grids_level = 3
+    mf4.kernel()
+    for xc in ['tpbe']:
+        mf4.compute_pdft_new(xc, do_split=True)
     for xc in ['ftblyp','tm06l','mc23']:
-        mf4 = supdft.PDFT(mf2, xc, 'pd')
-        #mf4.do_split = True
-        #mf4.dump_adm = name+'.h5'
-        mf4.no_thresh = 1e-4
-        mf4.grids_level = 3
-        mf4.kernel()
+        mf4.compute_pdft_new(xc, do_split=False)
+        #mf4 = supdft.PDFT(mf2, xc, 'pd')
+        ##mf4.do_split = True
+        ##mf4.dump_adm = name+'.h5'
+        #mf4.no_thresh = 1e-4
+        #mf4.grids_level = 3
+        #mf4.kernel()
