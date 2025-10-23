@@ -12,7 +12,7 @@ except:
     print('Warning: auto_pair not found. Install MOKIT if you need that.')
 from pyscf.lo import PM
 from pyscf.lo.boys import dipole_integral
-from automr import dump_mat, bridge, cidump
+from automr import dump_mat, cidump
 from automr.util import check_uno, chemcore
 import sys, os
 #try:
