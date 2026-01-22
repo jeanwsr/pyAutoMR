@@ -14,45 +14,49 @@ def run_surs(mf, xc2, conv=None, df='off', chk=None):
         mf2.xc=xc2
     #mf2.diis_on = False
     #mf2.diis_driver='plain'
-    if conv=='slow':
-        mf2.diis_start_cyc = 25
-        mf2.max_cycle = 100
-    elif conv=='earlydiis':
-        mf2.diis_start_cyc = 3
-        #mf2.diis_space = 15
-        mf2.max_cycle = 100
-    elif conv=='earlycrazy':
-        mf2.diis_start_cyc = 0
-        mf2.diis_space = 15
-        mf2.max_cycle = 100
-    elif 'plain' in conv:
-        mf2.diis_start_cyc = 5
-        mf2.diis_driver = 'plain'
-        mf2.max_cycle = 100
-        if 'hard' in conv:
-            mf2.max_cycle = 140
-            mf2.conv_tol = 5e-6
-    elif conv=='damp':
-        mf2.diis_start_cyc = 5
-        mf2.diis_driver = 'rev1'
-        mf2.diis_damp = 0.2
-        mf2.max_cycle = 100
-    elif conv=='slowdamp':
-        mf2.diis_start_cyc = 35
-        mf2.diis_driver = 'rev1'
-        mf2.diis_damp = 0.2
-        mf2.max_cycle = 130
-    elif conv=='nodiis':
-        mf2.diis_on = False
-        mf2.max_cycle = 130
-    if mf.mol.symmetry:
-        #mf2.diis_start_cyc = 5
-        mf2.max_cycle = 130
+    if isinstance(conv, str):
+        if conv=='slow':
+            mf2.diis_start_cyc = 25
+            mf2.max_cycle = 100
+        elif conv=='earlydiis':
+            mf2.diis_start_cyc = 3
+            #mf2.diis_space = 15
+            mf2.max_cycle = 100
+        elif conv=='earlycrazy':
+            mf2.diis_start_cyc = 0
+            #mf2.diis_driver = 'plain'
+            mf2.diis_space = 17
+            mf2.max_cycle = 120
+        elif 'plain' in conv:
+            mf2.diis_start_cyc = 5
+            mf2.diis_driver = 'plain'
+            mf2.max_cycle = 100
+            if 'hard' in conv:
+                mf2.max_cycle = 140
+                mf2.conv_tol = 5e-6
+        elif conv=='damp':
+            mf2.diis_start_cyc = 5
+            mf2.diis_driver = 'rev1'
+            mf2.diis_damp = 0.2
+            mf2.max_cycle = 100
+        elif conv=='slowdamp':
+            mf2.diis_start_cyc = 35
+            mf2.diis_driver = 'rev1'
+            mf2.diis_damp = 0.2
+            mf2.max_cycle = 130
+        elif conv=='nodiis':
+            mf2.diis_on = False
+            mf2.max_cycle = 130
+        if mf.mol.symmetry:
+            #mf2.diis_start_cyc = 5
+            mf2.max_cycle = 130
+            #mf2.verbose=6
         #mf2.verbose=6
-    #mf2.verbose=6
-    #mf2.max_cycle = 5
-    if 'lev' in conv:
-        mf2.level_shift = 0.2
+        #mf2.max_cycle = 5
+        if 'lev' in conv:
+            mf2.level_shift = 0.2
+    elif isinstance(conv, dict):
+        mf2.__dict__.update(conv)
     if chk is not None:
         mf2.dumpchk = True
         mf2.output = get_chkname(chk)
