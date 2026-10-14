@@ -1,6 +1,13 @@
 import numpy as np
 from pyscf import gto
-import tomli, os
+import os
+try:
+    import tomllib as tomli
+except ImportError:
+    try:
+        import tomli
+    except ImportError:
+        tomli = None
 
 def check_uno(noon, thresh=1.98):
     ndb = np.count_nonzero(noon > thresh)
@@ -60,6 +67,8 @@ def toml_load(toml, domain=None):
             raise ValueError('default config file not found')
     else:
         tomlfile = toml
+    if tomli is None:
+        raise ImportError("Parsing TOML requires either Python >= 3.11 (tomllib) or the 'tomli' package")
     with open(tomlfile, 'rb') as f:
         e = tomli.load(f)
         if domain is None:

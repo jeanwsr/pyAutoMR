@@ -14,8 +14,8 @@ This program aims to do:
 
 ## Installation
 Pre-requisites
-* [tomli](https://github.com/hukkin/tomli)
 * [PySCF](https://github.com/pyscf/pyscf)
+* [tomli](https://github.com/hukkin/tomli) (optional, only needed for Python < 3.11)
 * MOKIT (optional, no need to fully compile, only `autopair` is needed)
 * [ExSCF](https://github.com/hebrewsnabla/ExSCF) (optional, for SUHF)
 * [pyNOF](https://github.com/hebrewsnabla/pyNOF) (optional, for GVB)
