@@ -423,8 +423,8 @@ def guess_frag(mol_or_mf, frags, chgs, spins, sfx2c=False, rmdegen=False, bgchg=
             bgchg_b = np.array([mul_chg[i] for i in fraga])
         else:
             bgcoord_a = bgcoord_b = bgchg_a = bgchg_b = None
-        ca_a, cb_a, na_a, nb_a = do_uhf(atoma, mol.basis, chga, spina, bgcoord_a, bgchg_a, sfx2c=sfx2c)
-        ca_b, cb_b, na_b, nb_b = do_uhf(atomb, mol.basis, chgb, spinb, bgcoord_b, bgchg_b, sfx2c=sfx2c)
+        ca_a, cb_a, na_a, nb_a = do_uhf(atoma, mol.basis, chga, spina, bgcoord_a, bgchg_a, sfx2c=sfx2c, verbose=mol_or_mf.verbose)
+        ca_b, cb_b, na_b, nb_b = do_uhf(atomb, mol.basis, chgb, spinb, bgcoord_b, bgchg_b, sfx2c=sfx2c, verbose=mol_or_mf.verbose)
     else:
         mflist = mol_or_mf
         ca_a, cb_a = mflist[0].mo_coeff
@@ -458,13 +458,14 @@ def guess_frag(mol_or_mf, frags, chgs, spins, sfx2c=False, rmdegen=False, bgchg=
     #print(dm.shape)
     return dm, mo, occ
     
-def do_uhf(atoma, basisa, chga, spina, bg_coord=None, bg_chg = None, sfx2c=False):
+def do_uhf(atoma, basisa, chga, spina, bg_coord=None, bg_chg = None, sfx2c=False, verbose=None):
     mola = gto.Mole()
     mola.atom = atoma
     mola.basis = basisa
     mola.charge = chga
     mola.spin = spina
-    #mola.verbose = 4
+    if verbose is not None:
+        mola.verbose = verbose
     mola.build()
     mfa = scf.UHF(mola)
     if sfx2c:
