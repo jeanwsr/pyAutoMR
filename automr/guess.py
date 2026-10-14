@@ -365,6 +365,8 @@ def _from_frag(mol_or_mf, frags, chgs, spins,
         else:
             mf = dft.UKS(mol)
             mf.xc = xc
+        if not isinstance(mol_or_mf, gto.Mole) and getattr(mol_or_mf[0], 'with_df', None) is not None:
+            mf = mf.density_fit(mol_or_mf[0].with_df.auxbasis)
         if cycle == 0:
             mf.mo_coeff = mo
             mf.mo_occ = occ
