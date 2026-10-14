@@ -334,8 +334,13 @@ def _from_frag(mol_or_mf, frags, chgs, spins,
                conv='loose', cycle=2, level_shift=0.0, tol=1e-3, 
                skipstb=False, xc=None, newton=False, sfx2c=False, verbose=4, rmdegen=False, bgchg=None):
     
-    t1 = time.time() 
-    dm, mo, occ = guess_frag(mol_or_mf, frags, chgs, spins, sfx2c=sfx2c, rmdegen=rmdegen, bgchg=bgchg)
+    t1 = time.time()
+    if xc is None:
+        if isinstance(mol_or_mf, scf.hf.SCF):
+            xc = getattr(mol_or_mf, 'xc', None)
+        elif not isinstance(mol_or_mf, gto.Mole):
+            xc = getattr(mol_or_mf[0], 'xc', None)
+    dm, mo, occ = guess_frag(mol_or_mf, frags, chgs, spins, sfx2c=sfx2c, rmdegen=rmdegen, bgchg=bgchg, xc=xc)
     nomf = True
     if isinstance(mol_or_mf, scf.hf.SCF):
         mf = mol_or_mf
@@ -382,7 +387,7 @@ def _from_frag(mol_or_mf, frags, chgs, spins,
 #def make_bgchg(atom, chgs):
 #    return 
 
-def guess_frag(mol_or_mf, frags, chgs, spins, sfx2c=False, rmdegen=False, bgchg=None):
+def guess_frag(mol_or_mf, frags, chgs, spins, sfx2c=False, rmdegen=False, bgchg=None, xc=None):
     '''
     mol_or_mf: 
         if mol inputted, it will be fragmented by frags, chgs, spins
@@ -423,8 +428,8 @@ def guess_frag(mol_or_mf, frags, chgs, spins, sfx2c=False, rmdegen=False, bgchg=
             bgchg_b = np.array([mul_chg[i] for i in fraga])
         else:
             bgcoord_a = bgcoord_b = bgchg_a = bgchg_b = None
-        ca_a, cb_a, na_a, nb_a = do_uhf(atoma, mol.basis, chga, spina, bgcoord_a, bgchg_a, sfx2c=sfx2c, verbose=mol_or_mf.verbose, ecp=mol.ecp)
-        ca_b, cb_b, na_b, nb_b = do_uhf(atomb, mol.basis, chgb, spinb, bgcoord_b, bgchg_b, sfx2c=sfx2c, verbose=mol_or_mf.verbose, ecp=mol.ecp)
+        ca_a, cb_a, na_a, nb_a = do_uhf(atoma, mol.basis, chga, spina, bgcoord_a, bgchg_a, sfx2c=sfx2c, verbose=mol_or_mf.verbose, ecp=mol.ecp, xc=xc)
+        ca_b, cb_b, na_b, nb_b = do_uhf(atomb, mol.basis, chgb, spinb, bgcoord_b, bgchg_b, sfx2c=sfx2c, verbose=mol_or_mf.verbose, ecp=mol.ecp, xc=xc)
     else:
         mflist = mol_or_mf
         ca_a, cb_a = mflist[0].mo_coeff
@@ -458,7 +463,7 @@ def guess_frag(mol_or_mf, frags, chgs, spins, sfx2c=False, rmdegen=False, bgchg=
     #print(dm.shape)
     return dm, mo, occ
     
-def do_uhf(atoma, basisa, chga, spina, bg_coord=None, bg_chg = None, sfx2c=False, verbose=None, ecp=None):
+def do_uhf(atoma, basisa, chga, spina, bg_coord=None, bg_chg = None, sfx2c=False, verbose=None, ecp=None, xc=None):
     mola = gto.Mole()
     mola.atom = atoma
     mola.basis = basisa
@@ -469,7 +474,11 @@ def do_uhf(atoma, basisa, chga, spina, bg_coord=None, bg_chg = None, sfx2c=False
     if verbose is not None:
         mola.verbose = verbose
     mola.build()
-    mfa = scf.UHF(mola)
+    if xc is None:
+        mfa = scf.UHF(mola)
+    else:
+        mfa = dft.UKS(mola)
+        mfa.xc = xc
     if sfx2c:
         mfa = mfa.sfx2c1e()
     if bg_coord is not None:
@@ -481,7 +490,7 @@ def do_uhf(atoma, basisa, chga, spina, bg_coord=None, bg_chg = None, sfx2c=False
         for i, z in enumerate(charges):
             logger.note(mfa, '%.9g    %s', z, coords[i])
     mfa.kernel()
-    mfa.mulliken_pop()
+    mfa.mulliken_pop(verbose=mfa.verbose)
     #print(mfa.nelec)
     ca, cb = mfa.mo_coeff
     na, nb = mfa.nelec
