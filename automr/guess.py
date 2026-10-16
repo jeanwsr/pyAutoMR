@@ -600,7 +600,7 @@ def _flipspin(mol_or_mf, highspin, flipstyle='lmo', loc='pm', fliporb=[-1], site
         if loc=='boys':
             locl = Boys(mf.mol, mf.mo_coeff[:,act_idx])
         elif loc=='pm':
-            locl = PM(mf.mol, mf.mo_coeff[:,act_idx], mf)
+            locl = PM(mf.mol, mf.mo_coeff[:,act_idx])
             #loc.pop_method = 'meta-lowdin'
         loc_orb = locl.kernel()
         dump_mat.dump_mo(mf.mol, loc_orb, ncol=10)
